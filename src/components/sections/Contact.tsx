@@ -74,7 +74,12 @@ export function Contact() {
     // Security: Basic submission cooldown (60 seconds) to prevent spamming
     const LAST_SUBMISSION_KEY = 'last_submission_time';
     const COOLDOWN_MS = 60 * 1000;
-    const lastSubmission = localStorage.getItem(LAST_SUBMISSION_KEY);
+    let lastSubmission: string | null = null;
+    try {
+      lastSubmission = localStorage.getItem(LAST_SUBMISSION_KEY);
+    } catch (e) {
+      console.warn('localStorage access denied', e);
+    }
     const now = Date.now();
 
     if (lastSubmission && now - parseInt(lastSubmission) < COOLDOWN_MS) {
@@ -85,7 +90,11 @@ export function Contact() {
     }
 
     // Security: Set cooldown synchronously to prevent race conditions from concurrent script submissions
-    localStorage.setItem(LAST_SUBMISSION_KEY, now.toString());
+    try {
+      localStorage.setItem(LAST_SUBMISSION_KEY, now.toString());
+    } catch (e) {
+      console.warn('localStorage access denied', e);
+    }
     setStatus('transmitting');
 
     try {
