@@ -9,8 +9,15 @@ export function Preloader() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Check if booted in this session
-    if (sessionStorage.getItem('booted') === 'true') {
+// Check if booted in this session
+    let isBooted = false;
+    try {
+      isBooted = sessionStorage.getItem('booted') === 'true';
+    } catch (e) {
+      console.warn('sessionStorage access denied', e);
+    }
+
+    if (isBooted) {
       setIsVisible(false);
       return;
     }
@@ -71,7 +78,11 @@ export function Preloader() {
       setStage(11); // Trigger exit animation
 
       await new Promise(r => setTimeout(r, 500));
-      sessionStorage.setItem('booted', 'true');
+      try {
+        sessionStorage.setItem('booted', 'true');
+      } catch (e) {
+        console.warn('sessionStorage access denied', e);
+      }
       setIsVisible(false); // Unmount
     };
 
