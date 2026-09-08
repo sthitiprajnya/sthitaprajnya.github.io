@@ -20,18 +20,47 @@ export function GlitchText({ children, className, style }: GlitchTextProps) {
   useEffect(() => {
     if (prefersReducedMotion || !inView) return;
 
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     const scheduleNextGlitch = () => {
       const delay = Math.floor(Math.random() * (15000 - 8000 + 1)) + 8000;
       return setTimeout(() => {
         setIsGlitching(true);
         setTimeout(() => setIsGlitching(false), 200);
-        timeoutId = scheduleNextGlitch();
+        if (!document.hidden) {
+          timeoutId = scheduleNextGlitch();
+        }
       }, delay);
     };
 
-    let timeoutId = scheduleNextGlitch();
+    const stopGlitchTimer = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
 
-    return () => clearTimeout(timeoutId);
+    const handleVisibilityChange = () => {
+      // BOLT: Pause the glitch timer when tab is inactive to save CPU
+      if (document.hidden) {
+        stopGlitchTimer();
+      } else {
+        if (!timeoutId) {
+          timeoutId = scheduleNextGlitch();
+        }
+      }
+    };
+
+    if (!document.hidden) {
+      timeoutId = scheduleNextGlitch();
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopGlitchTimer();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [prefersReducedMotion, inView]);
 
   if (prefersReducedMotion) {
