@@ -71,11 +71,24 @@ export function Contact() {
       return;
     }
 
-    // Security: Basic submission cooldown (60 seconds) to prevent spamming
+// Security: Basic submission cooldown (60 seconds) to prevent spamming
     const LAST_SUBMISSION_KEY = 'last_submission_time';
     const COOLDOWN_MS = 60 * 1000;
-    const lastSubmission = localStorage.getItem(LAST_SUBMISSION_KEY);
     const now = Date.now();
+    let lastSubmission = null;
+
+    try {
+      lastSubmission = localStorage.getItem(LAST_SUBMISSION_KEY);
+    } catch (e) {
+      console.warn('localStorage access denied', e);
+      // Fallback to session storage if local storage is disabled to prevent bypass
+      try {
+        lastSubmission = sessionStorage.getItem(LAST_SUBMISSION_KEY);
+      } catch (e2) {
+        // Fallback to window variable to prevent complete bypass in same session
+        lastSubmission = (window as any).__lastSubmission || null;
+      }
+    }
 
     if (lastSubmission && now - parseInt(lastSubmission) < COOLDOWN_MS) {
       const remaining = Math.ceil((COOLDOWN_MS - (now - parseInt(lastSubmission))) / 1000);
@@ -85,7 +98,16 @@ export function Contact() {
     }
 
     // Security: Set cooldown synchronously to prevent race conditions from concurrent script submissions
-    localStorage.setItem(LAST_SUBMISSION_KEY, now.toString());
+    try {
+      localStorage.setItem(LAST_SUBMISSION_KEY, now.toString());
+    } catch (e) {
+      console.warn('localStorage access denied', e);
+      try {
+        sessionStorage.setItem(LAST_SUBMISSION_KEY, now.toString());
+      } catch (e2) {
+        (window as any).__lastSubmission = now.toString();
+      }
+    }
     setStatus('transmitting');
 
     try {
